@@ -2,6 +2,32 @@
 
 All notable changes to the FFF Skin Tools website, newest first.
 
+## v1.30 — Lazy-load the Bottom ad slot; remove the "AD" labels; fix logo flash on load (2026-10-26)
+- Reported by Brijen: the splash logo blinked for about a second while any page loaded. Cause:
+  until support.js boots, the browser paints the raw template markup as plain HTML, and the
+  splash section (full-screen, first in the markup) is what shows. support.js hides the raw
+  template itself, but it is deferred since v1.22, so on slower phones the raw template got a
+  paint first. Fix: the same rule support.js applies, x-dc{display:none!important}, is now in
+  the real head's inline style, so it applies before first paint. Safe because support.js
+  replaces that element with its own root anyway
+- Verified with throttled CPU/network page-load recordings: the splash logo no longer renders
+  while loading Welcome, Home, Category or Flow 6 (it still shows for ?screen=splash itself)
+- Requested by Brijen. The Bottom slot (7202099488) is no longer requested at page load
+  alongside the Top slot. An IntersectionObserver requests it once it comes within 300px of
+  the viewport, so visitors who never scroll that far are not served an ad they can't see
+  (better viewability). The Top slot (3316443330) still loads immediately
+- On short screens where the Bottom slot is already in or near view (e.g. Flow 6), it still
+  loads at once
+- push({}) fills the first unfilled <ins> on the page. The Top slot precedes the Bottom slot in
+  the markup on every screen, so the deferred push always lands on the Bottom slot
+- The campaign channel is still set on the slot before its push, same as before
+- Browsers without IntersectionObserver fall back to loading both slots at once
+- Removed the small "AD" label above all 20 Top/Bottom slots. The reserved slot height drops
+  from 296px to 280px accordingly (the 16px was the label), and the rule that hid the label on
+  unfilled slots is gone. The "AD" badge in the rewarded-ad modal is unchanged
+- Verified in headless Chrome on Welcome, Home, Category and Flow 6: slot requests before and
+  after scrolling, channel tagging, and 280px reserved height with no label
+
 ## v1.29 — Google Analytics 4 install + UTM parameter support (2026-08-13)
 - Team requirement: connect GA to the site and run tracking through UTM parameters
 - GA4 Measurement ID G-4V0M8SC886 is wired in and live. Verified the loader actually fires with

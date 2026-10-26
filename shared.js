@@ -90,19 +90,43 @@ window.AppShared = (function () {
     return a;
   }
 
-  function fillAds() {
+  // The Bottom slot is lazy-loaded: requested only once the user scrolls near it, so it isn't
+  // served to visitors who never reach it (better viewability). Every other slot is requested
+  // straight away.
+  var LAZY_AD_SLOT = '7202099488';
+  var LAZY_MARGIN = '300px 0px'; // start the request this far before the slot reaches the screen
+
+  function requestAd(el) {
+    if (el.getAttribute('data-ad-fill-requested')) return;
     try {
+      // Must be set BEFORE push() — the attribute is read as part of the ad request, so
+      // setting it afterwards would have no effect on reporting.
       var channel = getAttribution().channel;
-      document.querySelectorAll('ins.adsbygoogle').forEach(el => {
-        if (!el.getAttribute('data-ad-fill-requested')) {
-          // Must be set BEFORE push() — the attribute is read as part of the ad request, so
-          // setting it afterwards would have no effect on reporting.
-          if (channel) el.setAttribute('data-ad-channel', channel);
-          el.setAttribute('data-ad-fill-requested', '1');
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-        }
-      });
+      if (channel) el.setAttribute('data-ad-channel', channel);
+      el.setAttribute('data-ad-fill-requested', '1');
+      // push({}) fills the first not-yet-filled <ins> on the page. The Top slot always comes
+      // before the Bottom slot in the markup, so the deferred push lands on the Bottom slot.
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (e) { /* AdSense script not loaded yet, or blocked (e.g. ad blocker) — fail silently */ }
+  }
+
+  function fillAds() {
+    var lazy = [];
+    document.querySelectorAll('ins.adsbygoogle').forEach(el => {
+      if (el.getAttribute('data-ad-slot') === LAZY_AD_SLOT) lazy.push(el);
+      else requestAd(el);
+    });
+    if (!lazy.length) return;
+    if (!('IntersectionObserver' in window)) { lazy.forEach(requestAd); return; } // very old browsers: load as before
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        observer.unobserve(entry.target);
+        adLog('bottom slot near viewport — requesting ad');
+        requestAd(entry.target);
+      });
+    }, { rootMargin: LAZY_MARGIN });
+    lazy.forEach(el => observer.observe(el));
   }
 
   // Calls fillAds() once the page has fully loaded AND at least one full render/layout cycle
