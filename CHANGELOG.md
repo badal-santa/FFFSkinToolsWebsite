@@ -13,7 +13,7 @@ All notable changes to the FFF Skin Tools website, newest first.
 - Verified with throttled CPU/network page-load recordings: the splash logo no longer renders
   while loading Welcome, Home, Category or Flow 6 (it still shows for ?screen=splash itself)
 - Requested by Brijen. The Bottom slot (7202099488) is no longer requested at page load
-  alongside the Top slot. An IntersectionObserver requests it once it comes within 300px of
+  alongside the Top slot. An IntersectionObserver requests it once it reaches
   the viewport, so visitors who never scroll that far are not served an ad they can't see
   (better viewability). The Top slot (3316443330) still loads immediately
 - On short screens where the Bottom slot is already in or near view (e.g. Flow 6), it still
@@ -22,6 +22,14 @@ All notable changes to the FFF Skin Tools website, newest first.
   the markup on every screen, so the deferred push always lands on the Bottom slot
 - The campaign channel is still set on the slot before its push, same as before
 - Browsers without IntersectionObserver fall back to loading both slots at once
+- Found while testing on skins7: fillAds() pushed for every ins.adsbygoogle on the page,
+  including the ones Auto ads inserts and fills itself (6 boxes on the Welcome page, only 2 of
+  them ours). That was already true before v1.30, but with lazy loading a spare push({}) lands
+  on the next unfilled box, i.e. the Bottom slot, filling it early. fillAds() now only
+  handles our own slots ('.fff-ad > ins.adsbygoogle'). Verified with simulated Auto ads boxes:
+  1 push on load, the 2nd only after scrolling, Auto ads boxes untouched
+- LAZY_MARGIN set to 0px (was 300px): the Bottom slot is requested once it actually reaches
+  the screen
 - Removed the small "AD" label above all 20 Top/Bottom slots. The reserved slot height drops
   from 296px to 280px accordingly (the 16px was the label), and the rule that hid the label on
   unfilled slots is gone. The "AD" badge in the rewarded-ad modal is unchanged

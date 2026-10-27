@@ -112,7 +112,10 @@ window.AppShared = (function () {
 
   function fillAds() {
     var lazy = [];
-    document.querySelectorAll('ins.adsbygoogle').forEach(el => {
+    // Only our own slots (each sits in a .fff-ad wrapper). Auto ads insert their own
+    // ins.adsbygoogle elements and fill them themselves; pushing for those as well sends extra
+    // requests, and a spare push({}) would fill the Bottom slot early, defeating the lazy load.
+    document.querySelectorAll('.fff-ad > ins.adsbygoogle').forEach(el => {
       if (el.getAttribute('data-ad-slot') === LAZY_AD_SLOT) lazy.push(el);
       else requestAd(el);
     });
